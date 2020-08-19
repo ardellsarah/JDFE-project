@@ -650,12 +650,12 @@ sValallTheoMuts[,2] = DFE2
 
 yplotmin = -8
 yplotmax = 8
-output = simEvo(sValallTheoMuts, numGens=1000, numIterations = 10, 10^6, 10^-4, yplotmin, yplotmax, wantPlot = TRUE)
+output = simEvo(sValallTheoMuts, numGens=1000, numIterations = 10, popsize = 10^6, U = 10^-4, yplotmin, yplotmax, wantPlot = TRUE)
 
 
 
 
-########### MORE COMPLEX 'DOUBLE GAUSSIAN' FOR SUPP FIGURE ###############
+########### MORE COMPLEX 'DOUBLE GAUSSIAN' FOR SUPPlement ###############
 
 
 ## vals that are changed
@@ -798,7 +798,7 @@ corVec = seq(-0.9,0.9, by = 0.3)
 
 popsize = 10^4
 N = popsize
-numIterations = 2
+numIterations = 100
 numDrugs = 2
 numGens = 1000
 homeMean = -0.1
@@ -987,7 +987,7 @@ allData_nonSSWM_TheoJDFEs = data.frame(c(rep(1, times = 70), rep(10, times = 70)
 
 colnames(allData_nonSSWM_TheoJDFEs) = c('Nu', 'meanRespSlope','respVar', 'covar', 'meanrespVarSlope', 'meancovarSlope' )
 
-write.csv(allData_nonSSWM_TheoJDFEs6, "allData_nonSSWM_TheoJDFEs.csv")
+write.csv(allData_nonSSWM_TheoJDFEs, "allData_nonSSWM_TheoJDFEs.csv")
 
 
 
@@ -1445,7 +1445,7 @@ print(D12vCoVarSlope_Nu100)
 ########### SSWM WITH EPISTASIS SIM #########
 
 # variables that can be changed 
-numIterations = 300
+numIterations = 100
 numDrugs = 2
 numGens = 1000
 
@@ -1454,13 +1454,15 @@ r2Vals = c()
 
 allUbs = c()
 
+### MOST IMPORTANT PARAMETERS
+U = 10^-7
+gamma1 = 0.05
+#####
 
 N = 1.6*10^5
 popsize = 1.6*10^5
-U = 10^-7
 xmax = 2
 ymax = 2
-gamma1 = 0.05
 gamma2 = 1
 sd = 0.01
 mu2 = -0.1
@@ -1489,7 +1491,6 @@ r1vec = c()
 
 numBenallRhos = c()
 
-lastHomeSArray = array(0, dim = c(length(gammaVec)*length(rhoVec), 3))
 
 totalIT= 0
 
@@ -3157,11 +3158,11 @@ ggsave(figure4, file = 'compiledPlot.pdf', height = 11, width = 11)
 #### save data frame of all JDFEs stats as CSV for supplemental file ####
 allABRJDFEStats = data.frame(homeNameVec, respNameVec, homeMeanVec, respMeanVec,
                              homeVarVec, respVarVec, coVarVec, r1Vec, r2Vec, D11Vec,
-                             D22Vec, D12Vec, cVec, timeTo90pSameasR2PredVec)
+                             D22Vec, D12Vec, cVec)
 
 colnames(allABRJDFEStats) = c('Home', 'Response', 'Home_Mean', 'Response_Mean',
                               'Home_Var', 'Resp_Var', 'Covariance', 'r1', 'r2',
-                              'D11', 'D22', 'D12', 'c', 'timeTo90')
+                              'D11', 'D22', 'D12', 'c')
 
 write.csv(allABRJDFEStats, "allABRJDFEStats.csv")
 
@@ -3170,11 +3171,11 @@ write.csv(allABRJDFEStats, "allABRJDFEStats.csv")
 
 allABRJDFEStats_sigVals = data.frame(homeNameVec, respNameVec, homeMeanVec, respMeanVec,
                                      homeVarVec, respVarVec, coVarVec, r1Vec_sig, r2Vec_sig, D11Vec_sig,
-                                     D22Vec_sig, D12Vec_sig, cVec_sig, timeTo90pSameasR2PredVec_sig)
+                                     D22Vec_sig, D12Vec_sig, cVec_sig)
 
 colnames(allABRJDFEStats_sigVals) = c('Home', 'Response', 'Home_Mean', 'Response_Mean',
                                       'Home_Var', 'Resp_Var', 'Covariance', 'r1', 'r2',
-                                      'D11', 'D22', 'D12', 'c', 'timeTo90')
+                                      'D11', 'D22', 'D12', 'c')
 
 write.csv(allABRJDFEStats_sigVals, "allABRJDFEStats_sigVals.csv")
 
@@ -3925,7 +3926,7 @@ for(home in 1:7)
 
 #### RUN SIMULATION ####
 popsize = 10^4
-U = 10^-2     # mutation rate
+U = 10^-4     # mutation rate
 numGens = 1000 # per evolution simulation
 numIterations = 5 # number of times to simulate evo in the given environment 
 numDrugs = 7
@@ -4417,7 +4418,7 @@ assign(paste('r2vSlope_ABRSim_Nu', N*U,sep = ""), ggplot(data_thisNu, aes(x=r2,y
                           axis.text.y =element_text(size = 35,family = 'Helvetica'),axis.text.x =element_text(size = 35,family = 'Helvetica', color = c('grey30', 'transparent','grey30', 'transparent','grey30', 'transparent')), axis.title = element_blank()) +
          scale_x_continuous(label = scientific_10) +  scale_y_continuous(label = scientific_10))
 
-
+ggsave(r2vSlope_ABRSim_Nu1, file = 'r2vSlope_ABRSim_Nu1.pdf')
 
 ## SLOPE OF VARIANCE TRAJECTORY
 
@@ -4429,6 +4430,7 @@ assign(paste('D22vVarSlope_ABRSim_Nu', N*U,sep = ""), ggplot(data_thisNu, aes(x=
          scale_x_continuous(label = scientific_10) +  scale_y_continuous(label = scientific_10))
 
 
+ggsave(D22vVarSlope_ABRSim_Nu1, file = 'D22vVarSlope_ABRSim_Nu1.pdf')
 
 
 
@@ -4443,5 +4445,7 @@ assign(paste('D12vCoVarSlope_ABRSim_Nu', N*U,sep = ""),  ggplot(data_thisNu, aes
          scale_x_continuous(label = scientific_10) +  scale_y_continuous(label = scientific_10))
 
 
+
+ggsave(D12vCoVarSlope_ABRSim_Nu1, file = 'D12vCoVarSlope_ABRSim_Nu1.pdf')
 
 
