@@ -52,7 +52,7 @@ Running this section as is will produce panel A for figure 3. The code automatic
 FIGURE 4:
 All code needed to produce figure 4 and the supplementary tables 1a and 1b. This section can be run independently of all other sections. NOTE: in order for the section to work, the working directory must contain files 'KOGrDATAPrtoStop.csv' (from Cheverau et al 2015) and 'WTReplicate.csv' (sent to us by authors of Cheverau et al 2015), both of which are also available in this repository. 
 
-Running the entirety of this section will automatically produce the graphs comprising figure 4 and save them to the working directory. It will also save 4 .csv files: 
+Running the entirety of this section will automatically produce the graphs comprising figure 4 and save them to the working directory. It will also save 5 .csv files: 
 
 'mutTypeDf.csv' - contains the identity (2 - beneficial ; 1 - deleterious; 0 - neutral) we assign to all KO mutants in the Cheverau et al 2015 data set. See methods section on identifying benefical, deleterious and neutral mutants for more
 
@@ -61,6 +61,8 @@ Running the entirety of this section will automatically produce the graphs compr
 'allABRJDFEStats.csv' - contains the important statistics of all the antibiotic resistance JDFEs of interest. Including, the mean, variance and covariance of the home and non-home and the pleiotropy parameters r1, r2,d11,d22,d12 and c calculated using all values reported in the Cheverau et al 2015 data set
 
 'allABRJDFEStats_sigVals.csv' - contains the important statistics of all the antibiotic resistance JDFEs of interest. Including, the mean, variance and covariance of the home and non-home and the pleiotropy parameters r1, r2,d11,d22,d12 and c calculated using only the 'significant' (non-neutral) values we called from the Cheverau et al 2015 data set
+
+'probCollRes_CollSens_df.csv' - contains the expected number of mutations which would meet the criteria for collateral resistance and sensitivity in each antibiotic pair based off the noise distribution alone. 
 
 #######################################################################
 
