@@ -2681,11 +2681,13 @@ for( i in 1:dim(KOGrowthRates)[1])
 
 ## find the right cutoff values for calling beneficial muts so have FDR ~ 25% for beneficial muts in  all drugs
 
+
+## beneficial!
 testCutoffs = seq(0.01, 0.5, length.out = 100)
 
 nameVec = c()
-fdrVec = c()
-cutoffVec = c()
+benfdrVec = c()
+bencutoffVec = c()
 
 for(home in 1:7)
 {
@@ -2694,6 +2696,7 @@ for(home in 1:7)
   cutoffsthishome = c()
   for(cutoff in testCutoffs)
   {
+    alpha = 2*cutoff ## x2 because the 'cutoffs' used are full full dist to find r_alpha values, but we are only TESTING the beneficial dist so the ALPHA value = 2*"cutoff"
     
     evo = home
     if(evo == 1){
@@ -2726,8 +2729,7 @@ for(home in 1:7)
     
     beneficialMutCount = sum(mutTypeVec == 2)
     
-    expectedNumFalsePositive = sum(sValAllMuts[,home]>0)*cutoff*2 ## 
-    
+    expectedNumFalsePositive = sum(sValAllMuts[,home]>0)*alpha 
     fdr = expectedNumFalsePositive/beneficialMutCount ## want to be < 1 ,, ie want to be calling more than would be expected just by noise 
     
     fdrsThisHome = c(fdrsThisHome, fdr)
@@ -2738,11 +2740,75 @@ for(home in 1:7)
   
   
   nameVec = c(nameVec, title)
-  cutoffVec = c(cutoffVec, cutoffsthishome[cutofftouse])
-  fdrVec = c(fdrVec, fdrsThisHome[cutofftouse])
+  bencutoffVec = c(bencutoffVec, cutoffsthishome[cutofftouse])
+  benfdrVec = c(benfdrVec, fdrsThisHome[cutofftouse])
 }
 
-allFDR_Results = data.frame(nameVec, cutoffVec, fdrVec)
+
+# delterious
+## beneficial!
+testCutoffs = seq(0.01, 0.5, length.out = 100)
+
+nameVec = c()
+deltfdrVec = c()
+deltcutoffVec = c()
+
+for(home in 1:7)
+{
+  
+  fdrsThisHome = c()
+  cutoffsthishome = c()
+  for(cutoff in testCutoffs)
+  {
+    alpha = 2*cutoff ## x2 because the 'cutoffs' used are full full dist to find r_alpha values, but we are only TESTING the beneficial dist so the ALPHA value = 2*"cutoff"
+    
+    evo = home
+    if(evo == 1){
+      title = "No Drug"
+    }else if(evo == 2){
+      title = "CHL"
+    }else if(evo == 3){
+      title = "CPR"
+    }else if(evo ==4){
+      title = "MEC"
+    }else if(evo == 5){
+      title = "NIT"
+    }else if(evo == 6){
+      title = "TET"
+    }else{
+      title = "TMP"
+    }
+    
+    
+    deltCutoff = qnorm(cutoff, mean = 0, sd = WTGrowthRateSDs[home])
+    
+    DFE = sValAllMuts[,home]
+    errorDist = rnorm(400, mean = 0, sd = WTGrowthRateSDs[home])
+    breaks = seq(min(c(DFE, errorDist)), max(c(DFE, errorDist)), length.out = 50)
+    
+    
+    
+    mutTypeVec = (sValAllMuts[,(home)]>benCutoff)*2 +  (sValAllMuts[,(home)]<deltCutoff)
+    
+    deltMutCount = sum(mutTypeVec == 1)
+    
+    expectedNumFalsePositive = sum(sValAllMuts[,home]<0)*alpha 
+    fdr = expectedNumFalsePositive/deltMutCount ## want to be < 1 ,, ie want to be calling more than would be expected just by noise 
+    
+    fdrsThisHome = c(fdrsThisHome, fdr)
+    cutoffsthishome = c(cutoffsthishome, cutoff)
+  }
+  
+  cutofftouse = which.min(abs(fdrsThisHome-0.25))
+  
+  
+  nameVec = c(nameVec, title)
+  deltcutoffVec = c(deltcutoffVec, cutoffsthishome[cutofftouse])
+  deltfdrVec = c(deltfdrVec, fdrsThisHome[cutofftouse])
+}
+
+
+allFDR_Results = data.frame(nameVec, bencutoffVec, benfdrVec, deltcutoffVec, deltfdrVec)
 
 
 
@@ -2755,14 +2821,15 @@ numDrugs = 7
 beneficialCutoffVec = numeric(numDrugs)
 deleteriousCutoffVec = numeric(numDrugs)
 
-cutoffVec = allFDR_Results$cutoffVec#the values of cutoff so have lowest false disocvery rate in all 
-
+bencutoffVec = allFDR_Results$bencutoffVec
+deltcutoffVec = allFDR_Results$deltcutoffVec
 for( i in 1:numDrugs)
 {
-  cutoff = cutoffVec[i]
+  bencutoff = bencutoffVec[i]
+  deltcutoff = deltcutoffVec[i]
   ### mean = 0 bc svals are calc as subtract wt gr
-  beneficialCutoffVec[i] = qnorm((1-cutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
-  deleteriousCutoffVec[i] = qnorm((cutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
+  beneficialCutoffVec[i] = qnorm((1-bencutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
+  deleteriousCutoffVec[i] = qnorm((deltcutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
   
 }
 
@@ -2811,10 +2878,79 @@ MutTypeCounts$FalseDiscoveryRate = ( MutTypeCounts$ExpectedNumFalseDiscovery/Mut
 
 
 
+## for calling collateral resistance and sens
+
+expNumCR = c()
+expNumCS = c()
+homeName = c()
+nonhomeName = c()
+for(i in c(3,4,5,6))
+{
+  for(j in c(3,4,5,6))
+  {
+   
+    if(i!=j)
+    {
+    evo =i
+    if(evo == 1){
+      title = "No Drug"
+    }else if(evo == 2){
+      title = "CHL"
+    }else if(evo == 3){
+      title = "CPR"
+    }else if(evo ==4){
+      title = "MEC"
+    }else if(evo == 5){
+      title = "NIT"
+    }else if(evo == 6){
+      title = "TET"
+    }else{
+      title = "TMP"
+    }
+    
+    evo =j
+    if(evo == 1){
+      title2 = "No Drug"
+    }else if(evo == 2){
+      title2 = "CHL"
+    }else if(evo == 3){
+      title2 = "CPR"
+    }else if(evo ==4){
+      title2 = "MEC"
+    }else if(evo == 5){
+      title2 = "NIT"
+    }else if(evo == 6){
+      title2 = "TET"
+    }else{
+      title2 = "TMP"
+    }
+    alphaBenHome = 2*allFDR_Results$bencutoffVec[i]
+    alphaDeltHome = 2*allFDR_Results$deltcutoffVec[i]
+    
+    alphaBennonHome = 2*allFDR_Results$bencutoffVec[j]
+    alphaDeltnonHome = 2*allFDR_Results$deltcutoffVec[j]
+    
+    # prob coll res = prob of mut in quad 1 to be higher than cutoff percentile in BOTH envs (p(1)*p(other))
+    expNumCR = c(expNumCR, sum(sValAllMuts[,i] >0 & sValAllMuts[,j] >0)*alphaBennonHome*alphaBennonHome)
+                            # mult number of muts in quad 1 * likelihood above both cutoffs
+    
+    # prob coll sense = prob of mut in quad 4 to be higher than cutoff percentile in 1 and less than delt in nonhome
+    expNumCS = c(expNumCS, sum(sValAllMuts[,i] >0 & sValAllMuts[,j] <0)*alphaBennonHome*alphaDeltnonHome)
+                # mult number of muts in quad 4 * likelihood above home ben * liklihood below nonhome delt cutoff
+    
+    
+    
+    homeName = c(homeName, title)
+    nonhomeName = c(nonhomeName, title2)
+    }
+  }
+}
+
+probCollRes_CollSense_df = data.frame(homeName, nonhomeName, expNumCR, expNumCS)
 
 
-
-write.csv(MutTypeCounts, 'MutTypeCounts.csv')
+write.csv(probCollRes_CollSense_df, file = 'probCollRes_CollSense_df.csv' )
+write.csv(MutTypeCounts, file ='MutTypeCounts.csv')
 
 
 
@@ -2898,8 +3034,8 @@ for(resp in c(3,5,6,4)){
     
     
     
-    ## using only signficant values 
-    mutsToUse = sValAllMuts[sValAllMuts[,home]>beneficialCutoffVec[home] & (sValAllMuts[,resp]>beneficialCutoffVec[resp] | sValAllMuts[,resp]<deleteriousCutoffVec[resp]), c(home,resp)]
+    ## using only signficantly beneficial values in home
+    mutsToUse = sValAllMuts[sValAllMuts[,home]>beneficialCutoffVec[home] , c(home,resp)]
     
     if(length(mutsToUse) < 4)
     {
@@ -3080,7 +3216,9 @@ for(resp in c(3,5,6,4)){
       
       
     }else{
-      df2 = data.frame(c(sValAllMuts[,home],(WTReplicateData[,home]-WTGrowthRateMeans[home])), c(rep('KO', times = length(sValAllMuts[,home])), rep('WT', times = length(WTReplicateData[,home]))))
+      
+     
+       df2 = data.frame(c(sValAllMuts[,home],(WTReplicateData[,home]-WTGrowthRateMeans[home])), c(rep('KO', times = length(sValAllMuts[,home])), rep('WT', times = length(WTReplicateData[,home]))))
       colnames(df2) = c("Fitness", 'Type')
       
       if(title == 'CPR')
@@ -3088,32 +3226,35 @@ for(resp in c(3,5,6,4)){
         
         
         
-        pltListHM[[no]] = ggplot(df2, aes(x = Fitness, fill = Type)) + geom_histogram(bins = 50) +
-          theme_bw() + xlab(title) + ylab(title2)+ scale_fill_manual(values = c('grey40', 'red'))+
+        pltListHM[[no]] = ggplot() + geom_histogram(data = subset(df2, Type == 'KO'), aes(x = Fitness, y =..count../sum(..count..)),fill = 'grey40',bins = 50) +
+          geom_histogram(data = subset(df2, Type == 'WT'), aes(x = Fitness, y =..count../sum(..count..)),fill = 'red',alpha = 0.3,bins = 50) +
+          theme_bw() + xlab(title) + ylab(title2)+ 
           theme(panel.border = element_rect(color = 'black', fill = NA, size = 1.5), panel.grid.major = element_blank(),axis.text.y = element_text(size = 15, color = 'black'), axis.text.x = element_blank(),
                 panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title.x = element_blank(), axis.title.y = element_text( size = 20, color = 'black'), legend.position = 'none') +
-          geom_vline(xintercept =  0, linetype = 'dashed')+ coord_cartesian(ylim=c(0,1000), xlim = c(-1,0.3)) +
+          geom_vline(xintercept =  0, linetype = 'dashed')+ coord_cartesian(ylim=c(0,0.25), xlim = c(-1,0.3)) +
           scale_y_continuous(expand = c(0,0)) +
           annotate(geom="text", fontface = 'bold',size = 3,x=-0.9, y=940, label=as.character(sum(mutTypeHome==2 & mutTypeResp == 2)),color="black")
         
         
       }else if (title2 == 'MEC'){
-        pltListHM[[no]] =ggplot(df2, aes(x = Fitness, fill = Type)) + geom_histogram(bins = 50) +
-          theme_bw() + xlab(title) + ylab(title2)+ scale_fill_manual(values = c('grey40', 'red'))+
+        pltListHM[[no]] =ggplot() + geom_histogram(data = subset(df2, Type == 'KO'), aes(x = Fitness, y =..count../sum(..count..)),fill = 'grey40',bins = 50) +
+          geom_histogram(data = subset(df2, Type == 'WT'), aes(x = Fitness, y =..count../sum(..count..)),fill = 'red',alpha = 0.3,bins = 50) +
+          theme_bw() + xlab(title) + ylab(title2)+ 
           theme(panel.border = element_rect(color = 'black', fill = NA, size = 1.5), panel.grid.major = element_blank(),axis.text.x = element_text(size = 15, color = c('black', 'transparent', 'black')), axis.text.y = element_blank(),
                 panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title.x = element_text( size = 20, color = 'black'), axis.title.y = element_blank(), legend.position = 'none') +geom_vline(xintercept =  0, linetype = 'dashed')+ 
-          coord_cartesian(ylim=c(0,1000), xlim = c(-1,0.3)) +
+          coord_cartesian(ylim=c(0,0.25), xlim = c(-1,0.3)) +
           scale_y_continuous(expand = c(0,0)) +
           annotate(geom="text", fontface = 'bold', size = 3,x=-0.9, y=940, label=as.character(sum(mutTypeHome==2 & mutTypeResp == 2)),color="black")
         
         
       }else{
-        pltListHM[[no]] = ggplot(df2, aes(x = Fitness, fill = Type)) + geom_histogram(bins = 50) +
+        pltListHM[[no]] = ggplot() + geom_histogram(data = subset(df2, Type == 'KO'), aes(x = Fitness, y =..count../sum(..count..)),fill = 'grey40',bins = 50) +
+          geom_histogram(data = subset(df2, Type == 'WT'), aes(x = Fitness, y =..count../sum(..count..)),fill = 'red',alpha = 0.3,bins = 50) +
           theme_bw() +  scale_fill_manual(values = c('grey40', 'red'))+
           theme(panel.border = element_rect(color = 'black', fill = NA, size = 1.5), panel.grid.major = element_blank(),axis.text.x = element_blank(), axis.text.y = element_blank(),
                 panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = 'none') +
           geom_vline(xintercept =  0, linetype = 'dashed')+ 
-          coord_cartesian(ylim=c(0,1000), xlim = c(-1,0.3)) +
+          coord_cartesian(ylim=c(0,0.25), xlim = c(-1,0.3)) +
           scale_y_continuous(expand = c(0,0)) +
           annotate(geom="text", fontface = 'bold', size = 3,x=-0.9, y=940, label=as.character(sum(mutTypeHome==2 & mutTypeResp == 2)),color="black")
         
@@ -3446,15 +3587,17 @@ ggsave(cHeatMap_sigValues, file = 'cHeatMap_sigValues_rankOrdered.pdf', width = 
 allABRJDFEStats_sigVals_sub = subset(allABRJDFEStats_sigVals, Home!=Response)
 
 ## solve linear regressions for 3 groups and save parameters
-group1 = subset(allABRJDFEStats_sigVals_sub, abs(r2)<0.005)
-
+group1 = allABRJDFEStats_sigVals_sub[c(7,12),]
+# row 7
+and
+#row 12
 group1_lm = summary(lm(sqrt(group1$D22) ~ 0+ abs(group1$r2)))
 group1_slope = group1_lm$coefficients[1]
 
 
 
 
-group3 = subset(allABRJDFEStats_sigVals_sub, abs(r2)<0.016 & abs(r2) > 0.005)
+group3 = allABRJDFEStats_sigVals_sub[-c(7,12),]
 
 group3_lm = summary(lm(sqrt(group3$D22) ~ 0+abs(group3$r2)))
 group3_slope = group3_lm$coefficients[1]
@@ -3744,16 +3887,95 @@ for(home in 1:numDrugs)
 
 
 
+## make .csv of relevant bin fit parameters
+homeNames = c()
+respNames= c()
+binIDs = c()
+shapeVEC = c()
+scaleVEC = c()
+
+for(home in c(3,4,5,6))
+{
+  for(resp in c(3,4,5,6))
+  {
+    for(bin in 1:13)
+    {
+      
+      evo = home
+      if(evo == 1){
+        title = "No Drug"
+      }else if(evo == 2){
+        title = "CHL"
+      }else if(evo == 3){
+        title = "CPR"
+      }else if(evo ==4){
+        title = "MEC"
+      }else if(evo == 5){
+        title = "NIT"
+      }else if(evo == 6){
+        title = "TET"
+      }else{
+        title = "TMP"
+      }
+      
+      
+      evo = resp
+      if(evo == 1){
+        title2 = "No Drug"
+      }else if(evo == 2){
+        title2 = "CHL"
+      }else if(evo == 3){
+        title2 = "CPR"
+      }else if(evo ==4){
+        title2 = "MEC"
+      }else if(evo == 5){
+        title2 = "NIT"
+      }else if(evo == 6){
+        title2 = "TET"
+      }else{
+        title2 = "TMP"
+      }
+      
+      if(home!=resp)
+      {
+      if(allHomeWeibullParameters[[home]][[resp]][[bin]] == 0 )
+      {
+        shape = NA
+        scale  = NA
+        
+      }else{
+        
+        shape = allHomeWeibullParameters[[home]][[resp]][[bin]][1]
+        scale = allHomeWeibullParameters[[home]][[resp]][[bin]][2]
+      }
+      
+      homeNames = c(homeNames, title)
+      respNames= c(respNames, title2)
+      binIDs = c(binIDs,bin)
+      shapeVEC = c(shapeVEC, shape)
+      scaleVEC = c(scaleVEC, scale)
+      
+      }
+      
+    }
+  }
+}
+
+allWeibullBinParameters = data.frame(homeNames, respNames, binIDs, shapeVEC,scaleVEC)
+colnames(allWeibullBinParameters) = c('Home', 'Resp', 'Bin', 'Shape', 'Scale')
+write.csv(allWeibullBinParameters, 'allABRWeibullBinParameters.csv')
+
 #==============================================================================================================================================#
 ##### Find cutoffs for calling mutation neutral, deleterious or beneficial for each drug #####
 
 ## find the right cutoff values for calling beneficial muts so have FDR ~ 25% for beneficial muts in  all drugs
 ## same code to find be/delt cutoff as ABRJDFE_HEatmap JDFE
+## beneficial!
 testCutoffs = seq(0.01, 0.5, length.out = 100)
 
 nameVec = c()
-fdrVec = c()
-cutoffVec = c()
+benfdrVec = c()
+bencutoffVec = c()
 
 for(home in 1:7)
 {
@@ -3762,6 +3984,7 @@ for(home in 1:7)
   cutoffsthishome = c()
   for(cutoff in testCutoffs)
   {
+    alpha = 2*cutoff ## x2 because the 'cutoffs' used are full full dist to find r_alpha values, but we are only TESTING the beneficial dist so the ALPHA value = 2*"cutoff"
     
     evo = home
     if(evo == 1){
@@ -3789,12 +4012,12 @@ for(home in 1:7)
     breaks = seq(min(c(DFE, errorDist)), max(c(DFE, errorDist)), length.out = 50)
     
     
+    
     mutTypeVec = (sValAllMuts[,(home)]>benCutoff)*2 +  (sValAllMuts[,(home)]<deltCutoff)
     
     beneficialMutCount = sum(mutTypeVec == 2)
     
-    expectedNumFalsePositive = sum(sValAllMuts[,home]>0)*cutoff*2 ## 
-    
+    expectedNumFalsePositive = sum(sValAllMuts[,home]>0)*alpha 
     fdr = expectedNumFalsePositive/beneficialMutCount ## want to be < 1 ,, ie want to be calling more than would be expected just by noise 
     
     fdrsThisHome = c(fdrsThisHome, fdr)
@@ -3805,11 +4028,75 @@ for(home in 1:7)
   
   
   nameVec = c(nameVec, title)
-  cutoffVec = c(cutoffVec, cutoffsthishome[cutofftouse])
-  fdrVec = c(fdrVec, fdrsThisHome[cutofftouse])
+  bencutoffVec = c(bencutoffVec, cutoffsthishome[cutofftouse])
+  benfdrVec = c(benfdrVec, fdrsThisHome[cutofftouse])
 }
 
-allFDR_Results = data.frame(nameVec, cutoffVec, fdrVec)
+
+# delterious
+## beneficial!
+testCutoffs = seq(0.01, 0.5, length.out = 100)
+
+nameVec = c()
+deltfdrVec = c()
+deltcutoffVec = c()
+
+for(home in 1:7)
+{
+  
+  fdrsThisHome = c()
+  cutoffsthishome = c()
+  for(cutoff in testCutoffs)
+  {
+    alpha = 2*cutoff ## x2 because the 'cutoffs' used are full full dist to find r_alpha values, but we are only TESTING the beneficial dist so the ALPHA value = 2*"cutoff"
+    
+    evo = home
+    if(evo == 1){
+      title = "No Drug"
+    }else if(evo == 2){
+      title = "CHL"
+    }else if(evo == 3){
+      title = "CPR"
+    }else if(evo ==4){
+      title = "MEC"
+    }else if(evo == 5){
+      title = "NIT"
+    }else if(evo == 6){
+      title = "TET"
+    }else{
+      title = "TMP"
+    }
+    
+    
+    deltCutoff = qnorm(cutoff, mean = 0, sd = WTGrowthRateSDs[home])
+    
+    DFE = sValAllMuts[,home]
+    errorDist = rnorm(400, mean = 0, sd = WTGrowthRateSDs[home])
+    breaks = seq(min(c(DFE, errorDist)), max(c(DFE, errorDist)), length.out = 50)
+    
+    
+    
+    mutTypeVec = (sValAllMuts[,(home)]>benCutoff)*2 +  (sValAllMuts[,(home)]<deltCutoff)
+    
+    deltMutCount = sum(mutTypeVec == 1)
+    
+    expectedNumFalsePositive = sum(sValAllMuts[,home]<0)*alpha 
+    fdr = expectedNumFalsePositive/deltMutCount ## want to be < 1 ,, ie want to be calling more than would be expected just by noise 
+    
+    fdrsThisHome = c(fdrsThisHome, fdr)
+    cutoffsthishome = c(cutoffsthishome, cutoff)
+  }
+  
+  cutofftouse = which.min(abs(fdrsThisHome-0.25))
+  
+  
+  nameVec = c(nameVec, title)
+  deltcutoffVec = c(deltcutoffVec, cutoffsthishome[cutofftouse])
+  deltfdrVec = c(deltfdrVec, fdrsThisHome[cutofftouse])
+}
+
+
+allFDR_Results = data.frame(nameVec, bencutoffVec, deltfdrVec, deltcutoffVec, deltfdrVec)
 
 
 
@@ -3817,22 +4104,22 @@ allFDR_Results = data.frame(nameVec, cutoffVec, fdrVec)
 
 
 
-
+# CREATE BENEFICIAL AND DELTERIOUS FITNESS VALUE CUTTOFF VECS 
 numDrugs = 7
 beneficialCutoffVec = numeric(numDrugs)
 deleteriousCutoffVec = numeric(numDrugs)
 
-cutoffVec = allFDR_Results$cutoffVec#the values of cutoff so have lowest false disocvery rate in all 
-
+bencutoffVec = allFDR_Results$bencutoffVec
+deltcutoffVec = allFDR_Results$deltcutoffVec
 for( i in 1:numDrugs)
 {
-  cutoff = cutoffVec[i]
+  bencutoff = bencutoffVec[i]
+  deltcutoff = deltcutoffVec[i]
   ### mean = 0 bc svals are calc as subtract wt gr
-  beneficialCutoffVec[i] = qnorm((1-cutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
-  deleteriousCutoffVec[i] = qnorm((cutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
+  beneficialCutoffVec[i] = qnorm((1-bencutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
+  deleteriousCutoffVec[i] = qnorm((deltcutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
   
 }
-
 
 
 
