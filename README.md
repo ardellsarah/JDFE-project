@@ -3,6 +3,7 @@ A model of evolution of collateral resistance and sensitivity. The code is compi
 
 
 #####################################################################
+
 FIGURE 1:
 All code needed to produce figure 1 and the supplement to figure 1. This section can be run independently of all other sections. 
 
@@ -74,10 +75,10 @@ When the entirety of this section is run, it produces all panels of the main tex
 #######################################################################
 
 SUPP - ANTIBIOTIC RESISTANCE DATA SIMULATION
-All code needed to produce the supplmentary figure to figure 4/5 (supp fig 5) as well as supplementary table 2. This section can be run independently of all other sections. NOTE: in order for the section to work, the working directory must contain files 'KOGrDATAPrtoStop.csv' (from Cheverau et al 2015) and 'WTReplicate.csv' (sent to us by authors of Cheverau et al 2015), both of which are also available in this repository. 
+All code needed to produce the supplmentary figure to figure 4/5 (supp fig 5) as well as supplementary table 1 and supplementary file of all Weibull bin fit parameters. This section can be run independently of all other sections. NOTE: in order for the section to work, the working directory must contain files 'KOGrDATAPrtoStop.csv' (from Cheverau et al 2015) and 'WTReplicate.csv' (sent to us by authors of Cheverau et al 2015), both of which are also available in this repository. 
 
 
-This section runs the full wright-fisher simulation for the antibiotic resistance JDFES. Parameters that can be changed for the simulation are 'popsize', 'U', 'NumGens', and 'numIterations' (lines 3928-3931). When the entirety of this section is run, all panels for supplemental figure 5 are saved to the working directory. The file DFE_DistFit_Data.csv is also saved to the working directory. This file contains the log liklihood goodness of fit estimates for the home DFEs for the normal, eponential, and weibull distributions. 
+This section runs the full wright-fisher simulation for the antibiotic resistance JDFES. Parameters that can be changed for the simulation are 'popsize', 'U', 'NumGens', and 'numIterations' (lines 4215-4219). When the entirety of this section is run, all panels for supplemental figure 5 are saved to the working directory. The files DFE_DistFit_Data.csv  and 'allABRWeibullBinParameters.csv' are also saved to the working directory. This former file contains the log liklihood goodness of fit estimates for the home DFEs for the normal, eponential, and weibull distributions, and the later contains the shape and scale parameters for the weibull distributions fit to all home environmnet 'bins'. NA values in this file represent bins for certain home/non-home pairs which had no mutation representation in the Cheverau et al 2015 data set (ie bins for which a distribution could not be fit/bins in which it is not possible for a mutation to occur in the simulation). 
 
 
 
