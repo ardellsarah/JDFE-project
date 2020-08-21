@@ -931,12 +931,16 @@ for(U in c(10^-4,10^-3,10^-2))
   
   
   # ADJUST ALL MEASURES BY 2NUb (as discussed in text)
-  adjR2Vals = r2Vals*2*N*Ub
-  adjD22Vals = D2Vals*2*N*Ub 
-  adjD12Vals = D12Vals*2*N*Ub
-  adjD22endTimeVals= D2Vals*2*N*Ub*numGens
-  adjD12endTimeVals = D12Vals*2*N*Ub*numGens
+  adjR2Vals = r2Vals
+  adjD22Vals = D2Vals
+  adjD12Vals = D12Vals
+  adjD22endTimeVals= D2Vals
+  adjD12endTimeVals = D12Vals
   
+  
+  meanRespSlopes = meanRespSlopes/(2*N*Ub)
+  meanVarSlopeResp = meanVarSlopeResp/(2*N*Ub)
+  meanCoVarSlopeResp = meanCoVarSlopeResp/(2*N*Ub)
   
   data_thisNu = data.frame(adjR2Vals,adjD22Vals,adjD12Vals,adjD22endTimeVals,adjD12endTimeVals,meanRespSlopes, respVars, covars, meanVarSlopeResp, meanCoVarSlopeResp)
   
@@ -1328,12 +1332,16 @@ Ub = U*(1- pnorm(0, -0.1,0.1))
 
 color = 'dodgerblue4'
 
-adjR2Vals = r2Vals*2*N*Ub
-adjD22Vals = D2Vals*2*N*Ub 
-adjD12Vals = D12Vals*2*N*Ub
-adjD22endTimeVals= D2Vals*2*N*Ub*numGens
-adjD12endTimeVals = D12Vals*2*N*Ub*numGens
+adjR2Vals = r2Vals
+adjD22Vals = D2Vals
+adjD12Vals = D12Vals
+adjD22endTimeVals= D2Vals
+adjD12endTimeVals = D12Vals
 
+
+meanRespSlopes = meanRespSlopes/(2*N*Ub)
+meanVarSlopeResp = meanVarSlopeResp/(2*N*Ub)
+meanCoVarSlopeResp = meanCoVarSlopeResp/(2*N*Ub)
 
 data_thisNu = data.frame(adjR2Vals,adjD22Vals,adjD12Vals,adjD22endTimeVals,adjD12endTimeVals,meanRespSlopes, respVars, covars, meanVarSlopeResp, meanCoVarSlopeResp)
 
@@ -2949,7 +2957,7 @@ for(i in c(3,4,5,6))
 probCollRes_CollSense_df = data.frame(homeName, nonhomeName, expNumCR, expNumCS)
 
 
-write.csv(probCollRes_CollSense_df, file = 'probCollRes_CollSense_df.csv' )
+write.csv(probCollRes_CollSense_df, file = 'probCollRes_CollSens_df.csv' )
 write.csv(MutTypeCounts, file ='MutTypeCounts.csv')
 
 
@@ -3938,28 +3946,41 @@ for(home in c(3,4,5,6))
       
       if(home!=resp)
       {
-      if(allHomeWeibullParameters[[home]][[resp]][[bin]] == 0 )
-      {
-        shape = NA
-        scale  = NA
+        if(allHomeWeibullParameters[[home]][[resp]][[bin]] == 0 )
+        {
+          shape = NA
+          scale  = NA
+          
+        }else{
+          
+          shape = allHomeWeibullParameters[[home]][[resp]][[bin]][1]
+          scale = allHomeWeibullParameters[[home]][[resp]][[bin]][2]
+        }
         
-      }else{
+        homeNames = c(homeNames, title)
+        respNames= c(respNames, title2)
+        binIDs = c(binIDs,bin)
+        shapeVEC = c(shapeVEC, shape)
+        scaleVEC = c(scaleVEC, scale)
         
-        shape = allHomeWeibullParameters[[home]][[resp]][[bin]][1]
-        scale = allHomeWeibullParameters[[home]][[resp]][[bin]][2]
+      }else if(home == resp & bin == 1){
+        
+        
+        shape =  fitdist(sValAllMuts[,home]+1, distr = 'weibull')$estimate[1]
+        scale =  fitdist(sValAllMuts[,home]+1, distr = 'weibull')$estimate[2]
+        
+        
+        homeNames = c(homeNames, title)
+        respNames= c(respNames, title2)
+        binIDs = c(binIDs,NA)
+        shapeVEC = c(shapeVEC, shape)
+        scaleVEC = c(scaleVEC, scale)
       }
-      
-      homeNames = c(homeNames, title)
-      respNames= c(respNames, title2)
-      binIDs = c(binIDs,bin)
-      shapeVEC = c(shapeVEC, shape)
-      scaleVEC = c(scaleVEC, scale)
-      
-      }
-      
     }
+    
   }
 }
+
 
 allWeibullBinParameters = data.frame(homeNames, respNames, binIDs, shapeVEC,scaleVEC)
 colnames(allWeibullBinParameters) = c('Home', 'Resp', 'Bin', 'Shape', 'Scale')
@@ -4213,7 +4234,7 @@ for(home in 1:7)
 
 #### RUN SIMULATION ####
 popsize = 10^4
-U = 10^-4     # mutation rate
+U = 10^-2     # mutation rate
 numGens = 1000 # per evolution simulation
 numIterations = 5 # number of times to simulate evo in the given environment 
 numDrugs = 7
