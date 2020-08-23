@@ -804,6 +804,7 @@ numGens = 1000
 homeMean = -0.1
 homeSd = 0.1
 
+JDFENum = c()
 mu2Vec_sim  = c()
 c0Vec_sim = c()
 sdVec_sim = c()
@@ -839,6 +840,8 @@ for(U in c(10^-4,10^-3,10^-2))
         
         
         numJDFEs = numJDFEs+1
+        
+        JDFENum = c(JDFENum,numJDFEs )
         print('JDFE')
         print(numJDFEs)
         
@@ -894,6 +897,9 @@ for(U in c(10^-4,10^-3,10^-2))
       }
     }
   }
+  
+  
+  
   
   assign(paste("meanRespSlopes", U*popsize, sep = ""), meanRespSlopes)
   assign(paste("respVars", U*popsize, sep = ""), respVars)
@@ -994,10 +1000,10 @@ colnames(allData_nonSSWM_TheoJDFEs) = c('Nu', 'meanRespSlope','respVar', 'covar'
 write.csv(allData_nonSSWM_TheoJDFEs, "allData_nonSSWM_TheoJDFEs.csv")
 
 
+JDFE_Parameter_Array = data.frame(JDFENum, mu2Vec_sim, c0Vec_sim, sdVec_sim, r2Vals, D2Vals, D12Vals)
+colnames(JDFE_Parameter_Array) = c('JDFENum', 'Mu2',  'rho','sd','r2', 'D22', 'D12' )
 
-
-
-
+write.csv(JDFE_Parameter_Array, file = 'Gaussian_JDFE_Parameter_Array.csv')
 
 
 
@@ -3378,7 +3384,7 @@ ggsave(r2HeatMap, file = 'r2HeatMap_AllValues_rankOrdered.pdf', width = 5.5, hei
 limit <- c(1,16)
 cHeatMap = (ggplot(allABRJDFEStats, aes(x = Home,y=Response))+ geom_tile(aes(fill = as.numeric(rank(abs(c)))))+
               xlab("Home") +ylab("Non-home")+ 
-              theme_bw()+ geom_text( parse = TRUE, aes(label = gsub("e", " %*% 10^", scales::scientific_format()(r2)) ))+
+              theme_bw()+ geom_text( parse = TRUE, aes(label = gsub("e", " %*% 10^", scales::scientific_format()(abs(c)) )))+
               theme(panel.border = element_rect(color = 'black', fill = NA, size = 1), legend.position = 'bottom', legend.direction = 'horizontal', legend.text = element_text(size=15),legend.title = element_blank() ,axis.text = element_text(size = 20), axis.title.x = element_text(size = 25), axis.title.y = element_blank())+
               scale_fill_gradientn(colors = c( '#ffffff','#fff3eb','#ffe7d8','#ffdac4','#ffceb1','#ffc29d','#ffb689', '#ffa976','#ff9d62','#ff914e','#ff853b','#ff7827','#ff6c14'), limit = limit))
 
@@ -3540,7 +3546,7 @@ r2VtTo90 = ggplot(df, aes(x = r2, y = timeTo90)) + geom_point(size = 3) +
 
 # r2 rank ordered
 
-allABRJDFEStats_sigVals$Response <- with(allABRJDFEStats,factor(Response,levels = rev(sort(unique(Response)))))
+allABRJDFEStats_sigVals$Response <- with(allABRJDFEStats_sigVals,factor(Response,levels = rev(sort(unique(Response)))))
 
 
 # just have colors be 1 for each rank (16 total colors, with 6 blues and 10 oranges)
@@ -3572,7 +3578,7 @@ cHeatMap_sigValues = (ggplot(allABRJDFEStats_sigVals, aes(x = Home,y=Response))+
                         geom_tile(aes(fill = as.numeric(rank(abs(c)))))+
                         xlab("Home") +ylab("Non-home")+ 
                         theme_bw()+
-                        geom_text( parse = TRUE, aes(label = gsub("e", " %*% 10^", scales::scientific_format()(r2)) ))+
+                        geom_text( parse = TRUE, aes(label = gsub("e", " %*% 10^", scales::scientific_format()(abs(c)))))+
                         theme(panel.border = element_rect(color = 'black', fill = NA, size = 1), legend.position = 'bottom', legend.direction = 'horizontal', legend.text = element_text(size=15),legend.title = element_blank() ,axis.text = element_text(size = 20), axis.title.x = element_text(size = 25), axis.title.y = element_blank())+
                         scale_fill_gradientn(colors = c( '#ffffff','#fff3eb','#ffe7d8','#ffdac4','#ffceb1','#ffc29d','#ffb689', '#ffa976','#ff9d62','#ff914e','#ff853b','#ff7827','#ff6c14'), limit = limit))
 
@@ -4236,7 +4242,7 @@ for(home in 1:7)
 popsize = 10^4
 U = 10^-2     # mutation rate
 numGens = 1000 # per evolution simulation
-numIterations = 5 # number of times to simulate evo in the given environment 
+numIterations = 100 # number of times to simulate evo in the given environment 
 numDrugs = 7
 slopeArray = array(data = 0, dim = c(numDrugs, numDrugs))
 errorBarSize = array(data = 0, dim = c(numDrugs, numDrugs))
@@ -4703,13 +4709,17 @@ for(i in c(3,4,5,6)) #home
   }
 }
 
-adjR2Vals = c(r2Easy)*2*N*UbVec
-adjD22Vals = c(D22Easy)*2*N*UbVec
-adjD12Vals = c(D12Easy)*2*N*UbVec
-adjD22endTimeVals= c(D22Easy)*2*N*UbVec*numGens
-adjD12endTimeVals =c(D12Easy)*2*N*UbVec*numGens
+adjR2Vals = c(r2Easy)
+adjD22Vals = c(D22Easy)
+adjD12Vals = c(D12Easy)
+adjD22endTimeVals= c(D22Easy)
+adjD12endTimeVals =c(D12Easy)
 
 
+
+meanRespSlopes = meanRespSlopes/(2*N*Ub)
+meanVarSlopeResp = meanVarSlopeResp/(2*N*Ub)
+meanCoVarSlopeResp = meanCoVarSlopeResp/(2*N*Ub)
 
 
 data_thisNu = data.frame(c(adjR2Vals), c(adjD22endTimeVals), c(adjD12endTimeVals), c(slopeArray), c(varArray), c(covarArray))
@@ -4726,7 +4736,7 @@ assign(paste('r2vSlope_ABRSim_Nu', N*U,sep = ""), ggplot(data_thisNu, aes(x=r2,y
                           axis.text.y =element_text(size = 35,family = 'Helvetica'),axis.text.x =element_text(size = 35,family = 'Helvetica', color = c('grey30', 'transparent','grey30', 'transparent','grey30', 'transparent')), axis.title = element_blank()) +
          scale_x_continuous(label = scientific_10) +  scale_y_continuous(label = scientific_10))
 
-ggsave(r2vSlope_ABRSim_Nu1, file = 'r2vSlope_ABRSim_Nu1.pdf')
+ggsave(r2vSlope_ABRSim_Nu100, file = 'r2vSlope_ABRSim_Nu100.pdf')
 
 ## SLOPE OF VARIANCE TRAJECTORY
 
@@ -4738,7 +4748,7 @@ assign(paste('D22vVarSlope_ABRSim_Nu', N*U,sep = ""), ggplot(data_thisNu, aes(x=
          scale_x_continuous(label = scientific_10) +  scale_y_continuous(label = scientific_10))
 
 
-ggsave(D22vVarSlope_ABRSim_Nu1, file = 'D22vVarSlope_ABRSim_Nu1.pdf')
+ggsave(D22vVarSlope_ABRSim_Nu100, file = 'D22vVarSlope_ABRSim_Nu100.pdf')
 
 
 
@@ -4754,6 +4764,6 @@ assign(paste('D12vCoVarSlope_ABRSim_Nu', N*U,sep = ""),  ggplot(data_thisNu, aes
 
 
 
-ggsave(D12vCoVarSlope_ABRSim_Nu1, file = 'D12vCoVarSlope_ABRSim_Nu1.pdf')
+ggsave(D12vCoVarSlope_ABRSim_Nu100, file = 'D12vCoVarSlope_ABRSim_Nu100.pdf')
 
 
