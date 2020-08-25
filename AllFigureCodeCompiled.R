@@ -1953,7 +1953,7 @@ for(U in c( 10^-6, 10^-5, 10^-4))
       while(Wbar < 1)
       {
         x = x+1
-        if(x == 1)
+        if(x == 2)
         {
           r1vec = c(r1vec, mean(DFE1^2*(DFE1>0)))
           r2vec = c(r2vec, mean(DFE2*DFE1*(DFE1>0)) )
@@ -2038,6 +2038,8 @@ for(U in c( 10^-6, 10^-5, 10^-4))
           # home S-val
           
           # home S-val
+          
+          mu1 = gamma1*(xmax - nextGenIDarray[i,3])
           
           if(mu1<0)
           {
@@ -2240,7 +2242,7 @@ for(U in c( 10^-6, 10^-5, 10^-4))
         for( i in parentIDs)
         {
           ######pick s in home
-          
+          mu1 = gamma1*(xmax - nextGenIDarray[i,3])
           if(mu1<0)
           {
             homeS = -1*rexp(1, rate = 1/abs(mu1))
@@ -3570,7 +3572,7 @@ allABRJDFEStats_sigVals = data.frame(homeNameVec, respNameVec, homeMeanVec, resp
                                      homeVarVec, respVarVec, coVarVec, r1Vec_sig, r2Vec_sig, D11Vec_sig,
                                      D22Vec_sig, D12Vec_sig, cVec_sig)
 
-colnames(allABRJDFEStats_sigVals) = c('Home', 'Response', 'Home_Mean', 'Response_Mean',
+colnames(allABRJDFEStats_sigVals) = c('Home', 'Non-Home', 'Home_Mean', 'Response_Mean',
                                       'Home_Var', 'Resp_Var', 'Covariance', 'r1', 'r2',
                                       'D11', 'D22', 'D12', 'c')
 
@@ -3582,7 +3584,7 @@ allABRJDFEStats_sigVals_FDR_0.5 = data.frame(homeNameVec, respNameVec, homeMeanV
                                      homeVarVec, respVarVec, coVarVec, r1Vec_sig_0.5, r2Vec_sig_0.5, D11Vec_sig_0.5,
                                      D22Vec_sig_0.5, D12Vec_sig_0.5, cVec_sig_0.5)
 
-colnames(allABRJDFEStats_sigVals_FDR_0.5) = c('Home', 'Response', 'Home_Mean', 'Response_Mean',
+colnames(allABRJDFEStats_sigVals_FDR_0.5) = c('Home', 'Non-home', 'Home_Mean', 'Response_Mean',
                                       'Home_Var', 'Resp_Var', 'Covariance', 'r1', 'r2',
                                       'D11', 'D22', 'D12', 'c')
 
@@ -4255,6 +4257,8 @@ for(home in 1:numDrugs)
 homeNames = c()
 respNames= c()
 binIDs = c()
+binMIN = c()
+binMAX = c()
 shapeVEC = c()
 scaleVEC = c()
 
@@ -4316,6 +4320,8 @@ for(home in c(3,4,5,6))
         homeNames = c(homeNames, title)
         respNames= c(respNames, title2)
         binIDs = c(binIDs,bin)
+        binMIN = c(binMIN, binSeq[bin])
+        binMAX = c(binMAX, binSeq[bin+1])
         shapeVEC = c(shapeVEC, shape)
         scaleVEC = c(scaleVEC, scale)
         
@@ -4329,6 +4335,8 @@ for(home in c(3,4,5,6))
         homeNames = c(homeNames, title)
         respNames= c(respNames, title2)
         binIDs = c(binIDs,NA)
+        binMIN = c(binMIN, NA)
+        binMAX = c(binMAX, NA)
         shapeVEC = c(shapeVEC, shape)
         scaleVEC = c(scaleVEC, scale)
       }
@@ -4338,8 +4346,8 @@ for(home in c(3,4,5,6))
 }
 
 
-allWeibullBinParameters = data.frame(homeNames, respNames, binIDs, shapeVEC,scaleVEC)
-colnames(allWeibullBinParameters) = c('Home', 'Resp', 'Bin', 'Shape', 'Scale')
+allWeibullBinParameters = data.frame(homeNames, respNames, binMIN,binMAX, shapeVEC,scaleVEC)
+colnames(allWeibullBinParameters) = c('Home', 'Non-home', 'BinMIN', 'BinMAX', 'Shape', 'Scale')
 write.csv(allWeibullBinParameters, 'allABRWeibullBinParameters.csv')
 
 #==============================================================================================================================================#
