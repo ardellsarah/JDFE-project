@@ -2968,11 +2968,213 @@ write.csv(MutTypeCounts, file ='MutTypeCounts.csv')
 
 
 
+######### data for FDR 50% #########
+
+## find the right cutoff values for calling beneficial muts so have FDR ~ 50% for beneficial muts in  all drugs
+
+
+## beneficial!
+testCutoffs = seq(0.01, 0.5, length.out = 100)
+
+nameVec = c()
+benfdrVec = c()
+bencutoffVec = c()
+
+for(home in 1:7)
+{
+  
+  fdrsThisHome = c()
+  cutoffsthishome = c()
+  for(cutoff in testCutoffs)
+  {
+    alpha = 2*cutoff ## x2 because the 'cutoffs' used are full full dist to find r_alpha values, but we are only TESTING the beneficial dist so the ALPHA value = 2*"cutoff"
+    
+    evo = home
+    if(evo == 1){
+      title = "No Drug"
+    }else if(evo == 2){
+      title = "CHL"
+    }else if(evo == 3){
+      title = "CPR"
+    }else if(evo ==4){
+      title = "MEC"
+    }else if(evo == 5){
+      title = "NIT"
+    }else if(evo == 6){
+      title = "TET"
+    }else{
+      title = "TMP"
+    }
+    
+    
+    benCutoff = qnorm((1-cutoff), mean = 0, sd = WTGrowthRateSDs[home]) 
+    deltCutoff = qnorm(cutoff, mean = 0, sd = WTGrowthRateSDs[home])
+    
+    DFE = sValAllMuts[,home]
+    errorDist = rnorm(400, mean = 0, sd = WTGrowthRateSDs[home])
+    breaks = seq(min(c(DFE, errorDist)), max(c(DFE, errorDist)), length.out = 50)
+    
+    
+    
+    mutTypeVec = (sValAllMuts[,(home)]>benCutoff)*2 +  (sValAllMuts[,(home)]<deltCutoff)
+    
+    beneficialMutCount = sum(mutTypeVec == 2)
+    
+    expectedNumFalsePositive = sum(sValAllMuts[,home]>0)*alpha 
+    fdr = expectedNumFalsePositive/beneficialMutCount ## want to be < 1 ,, ie want to be calling more than would be expected just by noise 
+    
+    fdrsThisHome = c(fdrsThisHome, fdr)
+    cutoffsthishome = c(cutoffsthishome, cutoff)
+  }
+  
+  cutofftouse = which.min(abs(fdrsThisHome-0.5))
+  
+  
+  nameVec = c(nameVec, title)
+  bencutoffVec = c(bencutoffVec, cutoffsthishome[cutofftouse])
+  benfdrVec = c(benfdrVec, fdrsThisHome[cutofftouse])
+}
+
+
+# delterious
+
+testCutoffs = seq(0.01, 0.5, length.out = 100)
+
+nameVec = c()
+deltfdrVec = c()
+deltcutoffVec = c()
+
+for(home in 1:7)
+{
+  
+  fdrsThisHome = c()
+  cutoffsthishome = c()
+  for(cutoff in testCutoffs)
+  {
+    alpha = 2*cutoff ## x2 because the 'cutoffs' used are full full dist to find r_alpha values, but we are only TESTING the beneficial dist so the ALPHA value = 2*"cutoff"
+    
+    evo = home
+    if(evo == 1){
+      title = "No Drug"
+    }else if(evo == 2){
+      title = "CHL"
+    }else if(evo == 3){
+      title = "CPR"
+    }else if(evo ==4){
+      title = "MEC"
+    }else if(evo == 5){
+      title = "NIT"
+    }else if(evo == 6){
+      title = "TET"
+    }else{
+      title = "TMP"
+    }
+    
+    
+    deltCutoff = qnorm(cutoff, mean = 0, sd = WTGrowthRateSDs[home])
+    
+    DFE = sValAllMuts[,home]
+    errorDist = rnorm(400, mean = 0, sd = WTGrowthRateSDs[home])
+    breaks = seq(min(c(DFE, errorDist)), max(c(DFE, errorDist)), length.out = 50)
+    
+    
+    
+    mutTypeVec = (sValAllMuts[,(home)]>benCutoff)*2 +  (sValAllMuts[,(home)]<deltCutoff)
+    
+    deltMutCount = sum(mutTypeVec == 1)
+    
+    expectedNumFalsePositive = sum(sValAllMuts[,home]<0)*alpha 
+    fdr = expectedNumFalsePositive/deltMutCount ## want to be < 1 ,, ie want to be calling more than would be expected just by noise 
+    
+    fdrsThisHome = c(fdrsThisHome, fdr)
+    cutoffsthishome = c(cutoffsthishome, cutoff)
+  }
+  
+  cutofftouse = which.min(abs(fdrsThisHome-0.50))
+  
+  
+  nameVec = c(nameVec, title)
+  deltcutoffVec = c(deltcutoffVec, cutoffsthishome[cutofftouse])
+  deltfdrVec = c(deltfdrVec, fdrsThisHome[cutofftouse])
+}
+
+
+allFDR_Results_FDR_0.5 = data.frame(nameVec, bencutoffVec, benfdrVec, deltcutoffVec, deltfdrVec)
 
 
 
 
-### graph the JDFEs
+
+
+
+# CREATE BENEFICIAL AND DELTERIOUS FITNESS VALUE CUTTOFF VECS 
+numDrugs = 7
+beneficialCutoffVec_FDR_0.5 = numeric(numDrugs)
+deleteriousCutoffVec_FDR_0.5 = numeric(numDrugs)
+
+bencutoffVec = allFDR_Results_FDR_0.5$bencutoffVec
+deltcutoffVec = allFDR_Results_FDR_0.5$deltcutoffVec
+for( i in 1:numDrugs)
+{
+  bencutoff = bencutoffVec[i]
+  deltcutoff = deltcutoffVec[i]
+  ### mean = 0 bc svals are calc as subtract wt gr
+  beneficialCutoffVec_FDR_0.5[i] = qnorm((1-bencutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
+  deleteriousCutoffVec_FDR_0.5[i] = qnorm((deltcutoff), mean = 0, sd = WTGrowthRateSDs[i]) 
+  
+}
+
+
+
+
+# CREATE DATA FRAME WHICH IDENTIFIES ALL KOS AS 'BENEFICIAL', 'DELETERIOUS', OR 'NEUTRAL' IN ALL ENVIRONMENTS
+mutTypeDf = data.frame(KOGrowthRates)
+beneficialMutCount = numeric(7)
+deleteriousMutCount = numeric(7)
+totalPossibleBenMuts = numeric(7)
+for(home in 1:7)
+{
+  
+  benCutoff = beneficialCutoffVec[(home)]
+  deltCutoff = deleteriousCutoffVec[(home)]
+  
+  ##home -1 bc in svalallmuts dont have 1st col of mutID
+  mutTypeDf[,home] = (sValAllMuts[,(home)]>benCutoff)*2 +  (sValAllMuts[,(home)]<deltCutoff)
+  
+  
+  ## also count Num Muts which are beneficial in each env and deleterious in each env
+  beneficialMutCount[(home)] = sum(mutTypeDf[,(home)] == 2)
+  deleteriousMutCount[(home)] =sum(mutTypeDf[,(home)] == 1)
+  
+  totalPossibleBenMuts[(home)] = sum(sValAllMuts[,(home)]>0)
+  
+}
+
+KOnames = read.csv('KOGrDATAPrtoStop.csv', header = 1, sep = ",")[,1]
+mutTypeDf$KOnames = KOnames
+mutTypeDf = mutTypeDf[c(8, 1:7)]
+mutTypeDf = mutTypeDf[c(1,4,5,6,7)]  # only save data on drugs focus on in text
+
+## save 
+write.csv(mutTypeDf, "mutTypeDf_FDR_0.5.csv")
+
+
+#
+MutTypeCounts = data.frame(c('No Drug', 'CHL', 'CPR','MEC', 'NIT', 'TET', 'TMP'), beneficialMutCount, deleteriousMutCount, totalPossibleBenMuts)
+colnames(MutTypeCounts) = c('Drug', "Num Benefical Muts Called", 'Num Deleterious Muts Called', 'NumMutsGreaterThan0')
+
+
+MutTypeCounts$ExpectedNumFalseDiscovery = (MutTypeCounts$NumMutsGreaterThan0)*bencutoffVec*2 ## expect to call cutoff% *2 of the muts beneficial that are actuallt WT with a cutoff at top 10% of WT dist
+MutTypeCounts$FalseDiscoveryRate = ( MutTypeCounts$ExpectedNumFalseDiscovery/MutTypeCounts$`Num Benefical Muts Called`)
+
+
+
+
+
+
+#########################################
+
+### graph the JDFEs####
 
 
 
@@ -3012,6 +3214,20 @@ timeTo90pSameasR2PredVec_sig = numeric(16)
 
 
 
+homeMeanVec_sig_0.5 = numeric(16)
+respMeanVec_sig_0.5 = numeric(16)
+homeVarVec_sig_0.5 = numeric(16)
+respVarVec_sig_0.5 = numeric(16)
+coVarVec_sig_0.5 = numeric(16)
+r1Vec_sig_0.5 = numeric(16)
+r2Vec_sig_0.5 = numeric(16)
+D11Vec_sig_0.5 = numeric(16)
+D12Vec_sig_0.5 = numeric(16)
+D22Vec_sig_0.5 = numeric(16)
+cVec_sig_0.5 = numeric(16)
+timeTo90pSameasR2PredVec_sig_0.5 = numeric(16)
+
+
 
 pltListHM = list()
 
@@ -3048,7 +3264,7 @@ for(resp in c(3,5,6,4)){
     
     
     
-    ## using only signficantly beneficial values in home
+    ## using only signficantly beneficial values in home (FDR 25%)
     mutsToUse = sValAllMuts[sValAllMuts[,home]>beneficialCutoffVec[home] , c(home,resp)]
     
     if(length(mutsToUse) < 4)
@@ -3076,7 +3292,33 @@ for(resp in c(3,5,6,4)){
       
     }
     
+    ## using only signficantly beneficial values in home (FDR 50%)
+    mutsToUse = sValAllMuts[sValAllMuts[,home]>beneficialCutoffVec_FDR_0.5[home] , c(home,resp)]
     
+    if(length(mutsToUse) < 4)
+    {
+      
+      r1Vec_sig_0.5[no] = NA
+      r2Vec_sig_0.5[no] = NA
+      D11Vec_sig_0.5[no] = NA
+      D12Vec_sig_0.5[no] = NA
+      D22Vec_sig_0.5[no] = NA
+      cVec_sig_0.5[no] = NA
+      timeTo90pSameasR2PredVec_sig_0.5[no] = NA
+      
+    }else{
+      
+      homeSvals =  mutsToUse[,1]
+      respSvals = mutsToUse[,2]
+      r1Vec_sig_0.5[no] = mean((homeSvals)^2)
+      r2Vec_sig_0.5[no] = mean((homeSvals)*(respSvals))
+      D11Vec_sig_0.5[no] = mean((homeSvals)^3)
+      D12Vec_sig_0.5[no] = mean((homeSvals)^2*(respSvals))
+      D22Vec_sig_0.5[no] = mean((homeSvals)*(respSvals)^2)
+      cVec_sig_0.5[no] = sqrt(mean((homeSvals)*(respSvals)^2))/(mean((homeSvals)*(respSvals)))
+      timeTo90pSameasR2PredVec_sig_0.5[no] = (1.28^2*mean((homeSvals)*(respSvals)^2))/mean((homeSvals)*(respSvals))^2
+      
+    }
     
     
     evo = home
@@ -3335,6 +3577,16 @@ colnames(allABRJDFEStats_sigVals) = c('Home', 'Response', 'Home_Mean', 'Response
 write.csv(allABRJDFEStats_sigVals, "allABRJDFEStats_sigVals.csv")
 
 
+
+allABRJDFEStats_sigVals_FDR_0.5 = data.frame(homeNameVec, respNameVec, homeMeanVec, respMeanVec,
+                                     homeVarVec, respVarVec, coVarVec, r1Vec_sig_0.5, r2Vec_sig_0.5, D11Vec_sig_0.5,
+                                     D22Vec_sig_0.5, D12Vec_sig_0.5, cVec_sig_0.5)
+
+colnames(allABRJDFEStats_sigVals_FDR_0.5) = c('Home', 'Response', 'Home_Mean', 'Response_Mean',
+                                      'Home_Var', 'Resp_Var', 'Covariance', 'r1', 'r2',
+                                      'D11', 'D22', 'D12', 'c')
+
+write.csv(allABRJDFEStats_sigVals_FDR_0.5, "allABRJDFEStats_sigVals_FDR_0.5.csv")
 
 
 
@@ -3753,6 +4005,104 @@ r2VtTo90 = ggplot(df, aes(x = r2, y = timeTo90)) + geom_point(size = 3) +
 #ggsave(absr2VsqrtD22, file = 'absr2VsqrtD22_sigVals.pdf', width = 5.5, height = 5.33)
 #ggsave(r2VD12, file = 'r2VD12_sigVals.pdf', width = 5.5, height = 5.33)
 #ggsave(D12VD22, file = 'D12VD22_sigVals.pdf', width = 5.5, height = 5.33)
+
+
+
+#####################################################################
+#### S  U  P  P  -  F D R     0 . 5 ####
+
+
+# r2 rank ordered
+
+allABRJDFEStats_sigVals_FDR_0.5$Response <- with(allABRJDFEStats_sigVals_FDR_0.5,factor(Response,levels = rev(sort(unique(Response)))))
+
+
+# just have colors be 1 for each rank (16 total colors, with 6 blues and 10 oranges)
+
+## to get geom text to accept the power notation, need to put in the guts of the scientific 10 function and let geom text parse it itself (the function was parsing it for me, which is fine for scale_y_continuous, for example, but not for geom_text)
+limit = c(1, max(rank(allABRJDFEStats_sigVals_FDR_0.5$r2)))
+r2HeatMap_sigValues = (ggplot(allABRJDFEStats_sigVals_FDR_0.5, aes(x = Home,y=Response))+ 
+                         geom_tile(aes(fill = as.numeric(rank(r2))))+
+                         xlab("Home") +ylab("Non-home")+ 
+                         theme_bw()+
+                         geom_text( parse = TRUE, aes(label = gsub("e", " %*% 10^", scales::scientific_format()(r2)) ))+
+                         theme(panel.border = element_rect(color = 'black', fill = NA, size = 1), legend.position = 'bottom', legend.direction = 'horizontal', legend.text = element_text(size=15), legend.title = element_blank(),axis.text = element_text(size = 20), axis.title.x = element_text(size = 25), axis.title.y = element_text(size = 25))+
+                         scale_fill_gradientn(colors = c('#14a6ff','#3bb5ff', '#62c4ff','#89d3ff','#b1e1ff','#d8f0ff' ,'#fff3eb','#ffdac4','#ffc29d','#ffb689', '#ffa976','#ff9d62','#ff914e','#ff853b','#ff7827','#ff6c14'), limit = limit)) 
+
+print(r2HeatMap_sigValues)
+
+ggsave(r2HeatMap_sigValues, file = 'r2HeatMap_sigValues_FDR_0.5_rankOrdered.pdf', width = 5.5, height = 6.28)
+
+
+
+
+
+## c rank ordered
+#allABRJDFEStats_sigVals$Response <- with(allABRJDFEStats,factor(Response,levels = rev(sort(unique(Response)))))
+
+limit <- c(1,16)
+
+cHeatMap_sigValues = (ggplot(allABRJDFEStats_sigVals_FDR_0.5, aes(x = Home,y=Response))+ 
+                        geom_tile(aes(fill = as.numeric(rank(abs(c)))))+
+                        xlab("Home") +ylab("Non-home")+ 
+                        theme_bw()+
+                        geom_text( parse = TRUE, aes(label = gsub("e", " %*% 10^", scales::scientific_format()(abs(c)))))+
+                        theme(panel.border = element_rect(color = 'black', fill = NA, size = 1), legend.position = 'bottom', legend.direction = 'horizontal', legend.text = element_text(size=15),legend.title = element_blank() ,axis.text = element_text(size = 20), axis.title.x = element_text(size = 25), axis.title.y = element_blank())+
+                        scale_fill_gradientn(colors = c( '#ffffff','#fff3eb','#ffe7d8','#ffdac4','#ffceb1','#ffc29d','#ffb689', '#ffa976','#ff9d62','#ff914e','#ff853b','#ff7827','#ff6c14'), limit = limit))
+
+
+print(cHeatMap_sigValues)
+
+ggsave(cHeatMap_sigValues, file = 'cHeatMap_sigValues_FDR_0.5_rankOrdered.pdf', width = 5.5, height = 6.28)
+
+
+
+
+
+
+
+
+
+
+## make the absr2vsqrtD22 scatterplot
+
+allABRJDFEStats_sigVals_sub = subset(allABRJDFEStats_sigVals_FDR_0.5, Home!=Response)
+
+## solve linear regression for full sample
+group1 = allABRJDFEStats_sigVals_sub
+group1_lm = summary(lm(sqrt(group1$D22) ~ 0+ abs(group1$r2)))
+group1_slope = group1_lm$coefficients[1]
+
+
+## plot scatter plot + the regressions
+
+scientific_10 <- function(x) {
+  parse(text=gsub("e", " %*% 10^", scales::scientific_format()(x)))
+}
+
+
+ymax = max(sqrt(allABRJDFEStats_sigVals_sub$D22))
+xmax = max(abs(allABRJDFEStats_sigVals_sub$r2))
+absr2VsqrtD22 = ggplot(allABRJDFEStats_sigVals_sub, aes(x = abs(r2), y = sqrt(D22), color = as.factor(sign(r2))), group = group) + 
+  geom_abline(intercept = 0, slope = group1_slope, color = '#282828', size = 1.3) +
+  geom_point(size = 5) + 
+  ylim(0.001, ymax)+ 
+  scale_x_continuous(label = scientific_10, limits = c(0.0005,xmax))+
+  theme_bw()+ 
+  scale_color_manual(values = c('blue', 'orange'))+
+  theme(panel.border = element_rect(color = 'black', fill = NA, size = 1.5), panel.grid.major = element_blank(),
+        legend.position = 'none',axis.text.x = element_text(size = 15), axis.text.y = element_text(size = 15),panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20)) 
+
+
+
+
+
+
+print(absr2VsqrtD22)
+
+ggsave(absr2VsqrtD22, file = 'absr2vsqrtD22_sigValues_FDR_0.5.pdf', width = 5.5, height = 5.33)
+
 
 
 
@@ -4259,7 +4609,7 @@ allUbs = array()
 
 allCovars = array(data = 0, dim = c(numGens, numDrugs, numDrugs))
 allCors = array(data = 0, dim = c(numGens, numDrugs, numDrugs))
-for( yay in c(3,5,6,4))
+for( yay in c(3,4,5,6))
 {
   enviroEvolveID = yay
   
@@ -4683,10 +5033,6 @@ for( yay in c(3,5,6,4))
 
 
 # correct for drugs which focus on 
-varArray = varArray[c(3,4,5,6),c(3,4,5,6)]
-covarArray = covarArray[c(3,4,5,6),c(3,4,5,6)]
-slopeArray = slopeArray[c(3,4,5,6),c(3,4,5,6)]
-
 
 r2Easy= r2Easy[c(3,4,5,6),c(3,4,5,6)]
 D22Easy= D22Easy[c(3,4,5,6),c(3,4,5,6)]
@@ -4701,13 +5047,17 @@ N = popsize
 
 
 UbVec = c()
-for(i in c(3,4,5,6)) #home
+for(j in c(3,4,5,6)) #resp
 {
-  for(j in c(3,4,5,6)) #resp
+  for(i in c(3,4,5,6)) #home
   {
-    UbVec = c(UbVec,U*( 1 - pnorm(0, WTGrowthRateMeans[i], WTGrowthRateSDs[i])))
+    UbVec = c(UbVec,U*( 1 - pnorm(beneficialCutoffVec[i], 0, WTGrowthRateSDs[i])))
   }
 }
+
+diag(r2Easy) = NA
+diag(D22Easy) = NA
+diag(D12Easy) = NA
 
 adjR2Vals = c(r2Easy)
 adjD22Vals = c(D22Easy)
@@ -4716,15 +5066,22 @@ adjD22endTimeVals= c(D22Easy)
 adjD12endTimeVals =c(D12Easy)
 
 
+## adjust y 
+varArray = varArray[c(3,4,5,6),c(3,4,5,6)]
+covarArray = covarArray[c(3,4,5,6),c(3,4,5,6)]
+slopeArray = slopeArray[c(3,4,5,6),c(3,4,5,6)]
 
-meanRespSlopes = meanRespSlopes/(2*N*Ub)
-meanVarSlopeResp = meanVarSlopeResp/(2*N*Ub)
-meanCoVarSlopeResp = meanCoVarSlopeResp/(2*N*Ub)
+diag(varArray) = NA
+diag(covarArray) = NA
+diag(slopeArray) = NA
+
 
 
 data_thisNu = data.frame(c(adjR2Vals), c(adjD22endTimeVals), c(adjD12endTimeVals), c(slopeArray), c(varArray), c(covarArray))
 colnames(data_thisNu) = c('r2', 'D22', 'D12', 'meanRespSlopes', 'meanVarResp', 'meanCoVarResp')
 
+
+write.csv(data_thisNu, file = paste('ABRSimData_Nu_', N*U,'.csv'))
 
 color = 'hotpink4'
 ## MEAN SLOPE
