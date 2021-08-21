@@ -118,6 +118,7 @@ for(desiredFDR in desiredFDRVec)
     ### BENEFICIAL MUTS
     #step 1
     pVals = 1- pnorm(muts, mean = 0, sd = WTGrowthRateSDs[count] ) # pVal = chance of being equal or HIGHER than each mut val by chance, center of dist at 0 because sVals have been adjusted with the WT GR mean 
+    assign(paste0('pVals_ben_home',i), pVals)
     
     # step 2
     pRanks = rank(pVals, ties.method="min")
@@ -255,6 +256,10 @@ for(desiredFDR_collateralEffect in desiredFDRVec_colEffect)
           pVals = 1- pnorm(mutFitEffects_j_benin_i , mean = 0, sd = WTGrowthRateSDs_focalDrugs[j] )
           # pVal = chance of being equal or greater than each mut val by chance in env2 for muts called ben in env1
           
+          # savepval calcd for all genes
+          assign(paste0('pVals_CR_home',title, '_nonhome_',title2 ),( 1- pnorm(sValAllMuts[[title2]] , mean = 0, sd = WTGrowthRateSDs_focalDrugs[j]) ))
+          
+          
           # step 2
           pRanks = rank(pVals, ties.method="min") # min ties gives conservative estimate because higher rank = better change > p for same pval 
           df = data.frame( mutFitEffects_j_benin_i, pVals, pRanks)
@@ -276,6 +281,9 @@ for(desiredFDR_collateralEffect in desiredFDRVec_colEffect)
           #step 1
           pVals = pnorm(mutFitEffects_j_benin_i , mean = 0, sd = WTGrowthRateSDs_focalDrugs[j] )
           # pVal = chance of being equal or LESSER than each mut val by chance in env2 for muts called ben in env1
+          
+          # savepval calcd for all genes
+          assign(paste0('pVals_CS_home',title, '_nonhome_',title2 ),(  pnorm(sValAllMuts[[title2]] , mean = 0, sd = WTGrowthRateSDs_focalDrugs[j]) ))
           
           # step 2
           pRanks = rank(pVals, ties.method="min") # min ties gives conservative estimate because higher rank = better change > p for same pval 
@@ -320,7 +328,7 @@ FDR_results_colRes_colSens_df$expNumFalseCS = FDR_results_colRes_colSens_df$FDR_
 write.csv(FDR_results_colRes_colSens_df, file = 'FDR_results_colRes_colSens_df.csv' )
 
 
-### Make CSV of the ID of the coll effect of each mutant in each durg pair
+### Make CSV of the ID of the coll effect of each mutant in each durg pair ####
 
 focalDrugs = c("CPR", "MEC", "NIT", "TET")
 
@@ -365,9 +373,115 @@ for(home in focalDrugs)
   }
 }
 
-write.csv(CRCS_ID_df, file = 'CRCS_ID_df_cheverauJDFES.csv')
+write.csv(CRCS_ID_df, file = 'CRCS_ID_df_cheverauJDFES_full.csv')
 
 
+
+## Now, go through and only save data on genes with a call in at least one pair 
+
+# which gene indexes/names have significance in at least one drug
+indexes_haveCall = c()
+geneNames_haveCall = c()
+for(i in 1:length(getGeneNames$Common.gene.name) )
+{
+  calls_thisGene = as.character(CRCS_ID_df[i, c(-1)])
+  if(sum(calls_thisGene == '0')==12)
+  {
+    
+  }else{
+    indexes_haveCall = c(indexes_haveCall,i )
+    geneNames_haveCall = c( geneNames_haveCall,getGeneNames$Common.gene.name[i])
+
+  }
+  
+}
+
+
+# go through these genes and make vectors for all outputs
+
+callDF = data.frame(matrix(ncol = 41, nrow = 1))
+colnames(callDF) = c('geneName', 
+                     'call_CPR_MEC', 'call_CPR_NIT',  'call_CPR_TET',
+                     'call_MEC_CPR', 'call_MEC_NIT',  'call_MEC_TET',
+                     'call_NIT_CPR', 'call_NIT_MEC',  'call_NIT_TET',
+                     'call_TET_CPR', 'call_TET_MEC',  'call_TET_NIT',
+                     'pResistantCPR', 'pResistantMEC',  'pResistantNIT',  'pResistantTET', 
+                     'pCR_CPR_MEC', 'pCR_CPR_NIT',  'pCR_CPR_TET',
+                     'pCR_MEC_CPR', 'pCR_MEC_NIT',  'pCR_MEC_TET',
+                     'pCR_NIT_CPR', 'pCR_NIT_MEC',  'pCR_NIT_TET',
+                     'pCR_TET_CPR', 'pCR_TET_MEC',  'pCR_TET_NIT',
+                     'pCS_CPR_MEC', 'pCS_CPR_NIT',  'pCS_CPR_TET',
+                     'pCS_MEC_CPR', 'pCS_MEC_NIT',  'pCS_MEC_TET',
+                     'pCS_NIT_CPR', 'pCS_NIT_MEC',  'pCS_NIT_TET',
+                     'pCS_TET_CPR', 'pCS_TET_MEC',  'pCS_TET_NIT')
+
+for(gene in indexes_haveCall)
+{
+
+      geneName = as.character(getGeneNames$Common.gene.name[gene])
+      call_CPR_MEC = CRCS_ID_df[[paste0('Home_', 'CPR', '_NonHome_', 'MEC')]][gene]
+      call_CPR_NIT  = CRCS_ID_df[[paste0('Home_', 'CPR', '_NonHome_', 'NIT')]][gene]
+      call_CPR_TET  = CRCS_ID_df[[paste0('Home_', 'CPR', '_NonHome_', 'TET')]][gene]
+      call_MEC_CPR  = CRCS_ID_df[[paste0('Home_', 'MEC', '_NonHome_', 'CPR')]][gene]
+      call_MEC_NIT  = CRCS_ID_df[[paste0('Home_', 'MEC', '_NonHome_', 'NIT')]][gene]
+      call_MEC_TET =   CRCS_ID_df[[paste0('Home_', 'MEC', '_NonHome_', 'TET')]][gene]
+      call_NIT_CPR  = CRCS_ID_df[[paste0('Home_', 'NIT', '_NonHome_', 'CPR')]][gene]
+      call_NIT_MEC   = CRCS_ID_df[[paste0('Home_', 'NIT', '_NonHome_', 'MEC')]][gene]
+      call_NIT_TET = CRCS_ID_df[[paste0('Home_', 'NIT', '_NonHome_', 'TET')]][gene]
+      call_TET_CPR  = CRCS_ID_df[[paste0('Home_', 'TET', '_NonHome_', 'CPR')]][gene]
+      call_TET_MEC   = CRCS_ID_df[[paste0('Home_', 'TET', '_NonHome_', 'MEC')]][gene]
+      call_TET_NIT = CRCS_ID_df[[paste0('Home_', 'TET', '_NonHome_', 'NIT')]][gene]
+      pResistantCPR = pVals_ben_homeCPR[gene]
+      pResistantMEC = pVals_ben_homeMEC[gene]
+      pResistantNIT  =  pVals_ben_homeNIT[gene]
+      pResistantTET = pVals_ben_homeTET[gene]
+      pCR_CPR_MEC = pVals_CR_homeCPR_nonhome_MEC[gene]
+      pCR_CPR_NIT = pVals_CR_homeCPR_nonhome_MEC[gene]
+      pCR_CPR_TET= pVals_CR_homeCPR_nonhome_TET[gene]
+      pCR_MEC_CPR= pVals_CR_homeMEC_nonhome_CPR[gene]
+      pCR_MEC_NIT = pVals_CR_homeMEC_nonhome_NIT[gene]
+      pCR_MEC_TET= pVals_CR_homeMEC_nonhome_TET[gene]
+      pCR_NIT_CPR = pVals_CR_homeNIT_nonhome_CPR[gene]
+      pCR_NIT_MEC = pVals_CR_homeNIT_nonhome_MEC[gene]
+      pCR_NIT_TET= pVals_CR_homeNIT_nonhome_TET[gene]
+      pCR_TET_CPR = pVals_CR_homeTET_nonhome_CPR[gene]
+      pCR_TET_MEC = pVals_CR_homeTET_nonhome_MEC[gene]
+      pCR_TET_NIT= pVals_CR_homeTET_nonhome_NIT[gene]
+      pCS_CPR_MEC = pVals_CS_homeCPR_nonhome_MEC[gene]
+      pCS_CPR_NIT = pVals_CS_homeCPR_nonhome_MEC[gene]
+      pCS_CPR_TET= pVals_CS_homeCPR_nonhome_MEC[gene]
+      pCS_MEC_CPR= pVals_CS_homeMEC_nonhome_CPR[gene]
+      pCS_MEC_NIT = pVals_CS_homeMEC_nonhome_NIT[gene]
+      pCS_MEC_TET= pVals_CS_homeMEC_nonhome_TET[gene]
+      pCS_NIT_CPR = pVals_CS_homeNIT_nonhome_CPR[gene]
+      pCS_NIT_MEC = pVals_CS_homeNIT_nonhome_MEC[gene]
+      pCS_NIT_TET= pVals_CS_homeNIT_nonhome_TET[gene]
+      pCS_TET_CPR = pVals_CS_homeTET_nonhome_CPR[gene]
+      pCS_TET_MEC = pVals_CS_homeTET_nonhome_MEC[gene]
+      pCS_TET_NIT= pVals_CS_homeTET_nonhome_NIT[gene]
+      
+      
+      NEWROW = c(geneName, 
+                 call_CPR_MEC, call_CPR_NIT,  call_CPR_TET,
+                 call_MEC_CPR, call_MEC_NIT,  call_MEC_TET,
+                 call_NIT_CPR, call_NIT_MEC,  call_NIT_TET,
+                 call_TET_CPR, call_TET_MEC,  call_TET_NIT,
+                 pResistantCPR, pResistantMEC,  pResistantNIT,  pResistantTET, 
+                 pCR_CPR_MEC, pCR_CPR_NIT,  pCR_CPR_TET,
+                 pCR_MEC_CPR, pCR_MEC_NIT,  pCR_MEC_TET,
+                 pCR_NIT_CPR, pCR_NIT_MEC,  pCR_NIT_TET,
+                 pCR_TET_CPR, pCR_TET_MEC,  pCR_TET_NIT,
+                 pCS_CPR_MEC, pCS_CPR_NIT,  pCS_CPR_TET,
+                 pCS_MEC_CPR, pCS_MEC_NIT,  pCS_MEC_TET,
+                 pCS_NIT_CPR, pCS_NIT_MEC,  pCS_NIT_TET,
+                 pCS_TET_CPR, pCS_TET_MEC,  pCS_TET_NIT)
+      
+      callDF  = rbind(callDF, NEWROW)
+
+}
+
+callDF_complete = callDF[c(-1), ]
+write.csv(callDF_complete, file ='callDF_complete_cheverau.csv' )
 
 
 
@@ -498,6 +612,7 @@ countCRmuts = c()
 countCSmuts = c()
 countCNmuts = c()
 
+
 for(conc in ampConcVec)
 {
   
@@ -511,6 +626,13 @@ for(conc in ampConcVec)
   # calc CI
   CI_lowerBound = meanEffects - z_90CI*(sds / sqrt(2)) # n = 2
   CI_upperBound = meanEffects + z_90CI*(sds / sqrt(2)) # n = 2
+  
+  
+  # assign p-vals to vec
+  assign(paste0('pVals_CR', conc), 1- pnorm(meanEffects, mean = 0, sd = sds) )
+  assign(paste0('pVals_CS', conc),  pnorm(meanEffects, mean = 0, sd = sds) )
+  
+  
   
   # add to data frame
   stifflerData[[paste0(conc, '_CI_lowerBound' )]] = CI_lowerBound
@@ -542,22 +664,22 @@ for(conc in ampConcVec)
   muts_CEF = stifflerData$cef_0.2ngmL # no error data for CEF, so assume all mutations correctly identified by cutoff at 0 
   
   mutIDVec_col = as.character(numeric(length(meanEffects)))
-  mutIDVec_col[ muts_CEF > 0 &  CI_lowerBound > 0] = 'CR' # beneficial in both , collateral resistance
-  mutIDVec_col[muts_CEF > 0 &  CI_upperBound < 0] = 'CS' # deleterious in non home ben in home, collateral sensitivity 
-  mutIDVec_col[muts_CEF > 0 & CI_upperBound > 0 & CI_lowerBound < 0] = 'CN' # ben in home, neutral in non home, collateral neutrality 
+  mutIDVec_col[ muts_CEF > 0 &  CI_lowerBound > 0] = 'Collaterally Resistant' # beneficial in both , collateral resistance
+  mutIDVec_col[muts_CEF > 0 &  CI_upperBound < 0] = 'Collaterally Sensitive' # deleterious in non home ben in home, collateral sensitivity 
+  mutIDVec_col[muts_CEF > 0 & CI_upperBound > 0 & CI_lowerBound < 0] = 'Collaterally Neutral' # ben in home, neutral in non home, collateral neutrality 
   mutIDVec_col[muts_CEF < 0 ] = 'Other' # is not ben in home, is other 
   mutIDVec_col[is.na(meanEffects) | is.na(muts_CEF)] = NA # anything where arent measured values will have NA mut catagory 
   
   
   # add to datafram
   stifflerData[[paste0(conc, '_collateralMutID')]] = mutIDVec_col
-  
+  assign(paste0(conc, '_collateralMutID'),mutIDVec_col )
   # save summary data
   mutIDVec_col_nonNA = mutIDVec_col[!is.na(mutIDVec_col)]
   
-  countCRmuts = c(countCRmuts, sum(mutIDVec_col_nonNA == 'CR'))
-  countCSmuts = c(countCSmuts, sum(mutIDVec_col_nonNA == 'CS'))
-  countCNmuts = c(countCNmuts, sum(mutIDVec_col_nonNA == 'CN'))
+  countCRmuts = c(countCRmuts, sum(mutIDVec_col_nonNA == 'Collaterally Resistant'))
+  countCSmuts = c(countCSmuts, sum(mutIDVec_col_nonNA == 'Collaterally Sensitive'))
+  countCNmuts = c(countCNmuts, sum(mutIDVec_col_nonNA == 'Collaterally Neutral'))
   
   
   
@@ -569,7 +691,7 @@ for(conc in ampConcVec)
   colnames(df) = c('HomeS', 'NonHomeS', 'mutType')
   
   
-  df$mutType = factor(df$mutType, levels = c('Other','CN', 'CS','CR' ))
+  df$mutType = factor(df$mutType, levels = c('Other','Collaterally Neutral', 'Collaterally Sensitive','Collaterally Resistant' ))
   df = df[order(df$mutType), ]
   
   
@@ -597,12 +719,26 @@ write.csv(summary_df, file = 'summary_mutEfffects_StifflerData.csv')
 write.csv(stifflerData, file = 'fullData_mutEffects_and_types.csv')
 
 
+## Go through all muts, identify ones with calls
+IDs_benInHome = stifflerData$cef_0.2ngmL > 0
 
+geneNames = stifflerData$Mutation_amp1[IDs_benInHome]
+call_AMP156 = Amp_156_collateralMutID[IDs_benInHome]
+call_AMP2500 = Amp_2500_collateralMutID[IDs_benInHome]
+call_AMP39 = Amp_39_collateralMutID[IDs_benInHome]
+call_AMP625 = Amp_625_collateralMutID[IDs_benInHome]
+p_CRAmp_156 = pVals_CRAmp_156[IDs_benInHome]
+p_CRAmp_2500= pVals_CRAmp_2500[IDs_benInHome]
+p_CRAmp_39= pVals_CRAmp_39[IDs_benInHome]
+p_CRAmp_625= pVals_CRAmp_625[IDs_benInHome]
+p_CSAmp_156 = pVals_CSAmp_156[IDs_benInHome]
+p_CSAmp_2500= pVals_CSAmp_2500[IDs_benInHome]
+p_CSAmp_39= pVals_CSAmp_39[IDs_benInHome]
+p_CSAmp_625= pVals_CSAmp_625[IDs_benInHome]
 
+calls_andPvals_stiffler = data.frame(geneNames , call_AMP39, call_AMP156,call_AMP625, call_AMP2500, p_CRAmp_39, p_CRAmp_156, p_CRAmp_625, p_CRAmp_2500, p_CSAmp_39, p_CSAmp_156, p_CSAmp_625, p_CSAmp_2500)
 
-
-
-
+write.csv(calls_andPvals_stiffler, 'calls_andPvals_stiffler.csv')
 
 
 ###############################################################################################################
