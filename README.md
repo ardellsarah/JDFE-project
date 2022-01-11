@@ -1,4 +1,6 @@
 # JDFE-project
+This work is now pubished in eLife (2021) with the title 'The population genetics of collateral resistance and sensitivity' https://elifesciences.org/articles/73250
+
 A model of evolution of collateral resistance and sensitivity. The code is compiled in a way that, once all packages indicated a top of file are downloaded and loaded for use, the entirety of the code can be sourced and it will produce the majority of the figure components and files for the main text and supplement and save them to the specified working directory.  As sourcing the whole file is computationally intensive and as there are several parameters which the user can change to explore results, the code is broken up into sections, some of which can be sourced separately to produce different figures. I detail each section below.
 
 
